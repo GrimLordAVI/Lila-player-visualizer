@@ -1,2 +1,13 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# Python
+__pycache__/
+*.pyc
+
+# logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Large telemetry
+*.parquet
