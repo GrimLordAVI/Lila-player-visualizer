@@ -12,23 +12,23 @@
 
 </head>
 
-<body class="bg-slate-900 text-white p-6">
+<body class="bg-slate-900 text-white p-6" s>
 
-<h1 class="text-3xl font-bold mb-6">
+<h1 class="text-3xl font-bold mb-6" style="text-align: center;">
 LILA BLACK Match Visualizer
 </h1>
 
-<div class="flex gap-4 mb-6">
+<div class="flex gap-4 mb-6" style="justify-content: center;">
 
-<select id="mapSelect" class="text-black p-2 rounded">
+<select id="mapSelect" class="text-black p-2 rounded" style="text-align: center;">
 <option value="">All Maps</option>
 </select>
 
-<select id="dateSelect" class="text-black p-2 rounded">
+<select id="dateSelect" class="text-black p-2 rounded" style="text-align: center;">
 <option value="">All Dates</option>
 </select>
 
-<select id="matchSelect" class="text-black p-2 rounded w-96">
+<select id="matchSelect" class="text-black p-2 rounded w-96" style="text-align: center;">
 <option value="">All Matches</option>
 </select>
 
@@ -40,13 +40,18 @@ Toggle Heatmap
 </button>
 
 </div>
+<div class="timeline" style="display: flex; align-items: center; gap: 10px; justify-content: center; margin-bottom: 20px;">
+  <label>Timeline</label>
+  <input type="range" id="timeSlider" min="0" max="100" value="100">
+  <span id="timeLabel">Full Match</span>
+</div>
 
-<div class="map-container">
+<div class="map-container" >
 
 <img
 id="mapImage"
 src="../minimaps/AmbroseValley_Minimap.png"
-alt="map"
+alt="map" 
 />
 
 <canvas
@@ -56,13 +61,9 @@ height="1024"
 ></canvas>
 
 </div>
-<div class="timeline">
-  <label>Timeline</label>
-  <input type="range" id="timeSlider" min="0" max="100" value="100">
-  <span id="timeLabel">Full Match</span>
-</div>
 
-<script src="app.js"></script>
+
+
 <div id="statsPanel" class="stats">
   <div>Total Events: <span id="statEvents"></span></div>
   <div>Matches: <span id="statMatches"></span></div>
@@ -70,12 +71,9 @@ height="1024"
   <div>Kills: <span id="statKills"></span></div>
   <div>Loot: <span id="statLoot"></span></div>
 </div>
-<div class="legend">
-  <div><span class="dot kill"></span> Kill</div>
-  <div><span class="dot death"></span> Death</div>
-  <div><span class="dot loot"></span> Loot</div>
-  <div><span class="dot bot"></span> Bot</div>
-</div>
+
+
+<script src="app.js"></script>
 </body>
 
 </html>

@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", async () => {
+ document.addEventListener("DOMContentLoaded", async () => {
 
 const canvas = document.getElementById("mapCanvas")
 const ctx = canvas.getContext("2d")
@@ -26,20 +26,6 @@ ctx.fillStyle = EVENT_COLORS[event.event] || "#999"
 // -----------------------------
 
 async function loadData(){
- events.sort((a,b)=> new Date(a.ts) - new Date(b.ts))
- document.getElementById("statEvents").textContent = events.length
-
-const matches = new Set(events.map(e => e.match_id))
-document.getElementById("statMatches").textContent = matches.size
-
-const players = new Set(events.map(e => e.user_id))
-document.getElementById("statPlayers").textContent = players.size
-
-const kills = events.filter(e => e.event.includes("Kill")).length
-document.getElementById("statKills").textContent = kills
-
-const loot = events.filter(e => e.event === "Loot").length
-document.getElementById("statLoot").textContent = loot
 const res = await fetch("../output/matches.json")
 const data = await res.json()
 
@@ -57,12 +43,40 @@ else{
 events = Object.values(data)[0]
 }
 
+ events.sort((a,b)=> new Date(a.ts) - new Date(b.ts))
+ 
+ // Update stats with loaded data
+ updateStats()
+
 console.log("Events loaded:", events.length)
 
 populateFilters()
 draw()
 
 }
+
+// -----------------------------
+// UPDATE STATS
+// -----------------------------
+
+function updateStats(){
+const filtered = getFilteredEvents()
+
+document.getElementById("statEvents").textContent = filtered.length
+
+const matches = new Set(filtered.map(e => e.match_id))
+document.getElementById("statMatches").textContent = matches.size
+
+const players = new Set(filtered.map(e => e.user_id))
+document.getElementById("statPlayers").textContent = players.size
+
+const kills = filtered.filter(e => e.event.includes("Kill")).length
+document.getElementById("statKills").textContent = kills
+
+const loot = filtered.filter(e => e.event === "Loot").length
+document.getElementById("statLoot").textContent = loot
+}
+
 // -----------------------------
 // POPULATE FILTERS
 // -----------------------------
@@ -311,9 +325,9 @@ draw()
 // FILTER EVENTS
 // -----------------------------
 
-mapSelect.addEventListener("change",draw)
-dateSelect.addEventListener("change",draw)
-matchSelect.addEventListener("change",draw)
+mapSelect.addEventListener("change",() => { updateStats(); draw(); })
+dateSelect.addEventListener("change",() => { updateStats(); draw(); })
+matchSelect.addEventListener("change",() => { updateStats(); draw(); })
 
 // -----------------------------
 // HEATMAP BUTTON
