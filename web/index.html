@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<title>LILA BLACK Match Visualizer</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+<body class="bg-slate-900 text-white p-6">
+
+<h1 class="text-3xl font-bold mb-6">
+LILA BLACK Match Visualizer
+</h1>
+
+<div class="flex gap-4 mb-6">
+
+<select id="mapSelect" class="text-black p-2 rounded">
+<option value="">All Maps</option>
+</select>
+
+<select id="dateSelect" class="text-black p-2 rounded">
+<option value="">All Dates</option>
+</select>
+
+<select id="matchSelect" class="text-black p-2 rounded w-96">
+<option value="">All Matches</option>
+</select>
+
+<button
+id="toggleHeatmap"
+class="bg-blue-500 px-4 py-2 rounded hover:bg-blue-600"
+>
+Toggle Heatmap
+</button>
+
+</div>
+
+<div class="map-container">
+
+<img
+id="mapImage"
+src="../minimaps/AmbroseValley_Minimap.png"
+alt="map"
+/>
+
+<canvas
+id="mapCanvas"
+width="1024"
+height="1024"
+></canvas>
+
+</div>
+<div class="timeline">
+  <label>Timeline</label>
+  <input type="range" id="timeSlider" min="0" max="100" value="100">
+  <span id="timeLabel">Full Match</span>
+</div>
+
+<script src="app.js"></script>
+<div id="statsPanel" class="stats">
+  <div>Total Events: <span id="statEvents"></span></div>
+  <div>Matches: <span id="statMatches"></span></div>
+  <div>Players: <span id="statPlayers"></span></div>
+  <div>Kills: <span id="statKills"></span></div>
+  <div>Loot: <span id="statLoot"></span></div>
+</div>
+<div class="legend">
+  <div><span class="dot kill"></span> Kill</div>
+  <div><span class="dot death"></span> Death</div>
+  <div><span class="dot loot"></span> Loot</div>
+  <div><span class="dot bot"></span> Bot</div>
+</div>
+</body>
+
+</html>
