@@ -1,4 +1,4 @@
- document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("DOMContentLoaded", async () => {
 
 const canvas = document.getElementById("mapCanvas")
 const ctx = canvas.getContext("2d")
@@ -8,10 +8,19 @@ const dateSelect = document.getElementById("dateSelect")
 const matchSelect = document.getElementById("matchSelect")
 const heatmapBtn = document.getElementById("toggleHeatmap")
 const mapImage = document.getElementById("mapImage")
+const slider = document.getElementById("timeSlider")
 
 let events = []
 let currentTime = null
 let heatmapVisible = false
+let sliderTimeout = null
+
+// dynamic world bounds
+let minX = Infinity
+let maxX = -Infinity
+let minZ = Infinity
+let maxZ = -Infinity
+
 const EVENT_COLORS = {
 Position:"#4CAF50",
 Kill:"#FF4444",
@@ -20,16 +29,17 @@ Loot:"#FFD700",
 BotKill:"#FF8800",
 KilledByStorm:"#00BFFF"
 }
-ctx.fillStyle = EVENT_COLORS[event.event] || "#999"
+
 // -----------------------------
 // LOAD DATA
 // -----------------------------
 
 async function loadData(){
+
 const res = await fetch("../output/matches.json")
 const data = await res.json()
 
-// detect actual structure
+// detect structure
 if(Array.isArray(data)){
 events = data
 }
@@ -43,13 +53,23 @@ else{
 events = Object.values(data)[0]
 }
 
- events.sort((a,b)=> new Date(a.ts) - new Date(b.ts))
- 
- // Update stats with loaded data
- updateStats()
+// sort by time
+events.sort((a,b)=> new Date(a.ts) - new Date(b.ts))
 
-console.log("Events loaded:", events.length)
+// calculate world bounds automatically
+events.forEach(e=>{
+if(e.x!==undefined && e.z!==undefined){
+if(e.x < minX) minX = e.x
+if(e.x > maxX) maxX = e.x
+if(e.z < minZ) minZ = e.z
+if(e.z > maxZ) maxZ = e.z
+}
+})
 
+console.log("World bounds:",minX,maxX,minZ,maxZ)
+console.log("Events loaded:",events.length)
+
+updateStats()
 populateFilters()
 draw()
 
@@ -60,6 +80,7 @@ draw()
 // -----------------------------
 
 function updateStats(){
+
 const filtered = getFilteredEvents()
 
 document.getElementById("statEvents").textContent = filtered.length
@@ -75,6 +96,7 @@ document.getElementById("statKills").textContent = kills
 
 const loot = filtered.filter(e => e.event === "Loot").length
 document.getElementById("statLoot").textContent = loot
+
 }
 
 // -----------------------------
@@ -111,18 +133,18 @@ matchSelect.appendChild(opt)
 }
 
 // -----------------------------
-// WORLD → MAP COORDINATES
+// WORLD → MAP COORDINATES (FIXED)
 // -----------------------------
 
 function worldToMap(x,z){
 
-const mapSize=1024
-const worldMin=-5000
-const worldMax=5000
+const mapWidth = canvas.width
+const mapHeight = canvas.height
 
-const mapX=((x-worldMin)/(worldMax-worldMin))*mapSize
-const mapY=((z-worldMin)/(worldMax-worldMin))*mapSize
+const padding = 0.05   // 5% crop
 
+const mapX = ((x - minX) / ((maxX - minX) * (1 - padding))) * mapWidth
+const mapY = mapHeight - ((z - minZ) / ((maxZ - minZ) * (1 - padding))) * mapHeight
 return [mapX,mapY]
 
 }
@@ -133,16 +155,16 @@ return [mapX,mapY]
 
 function getFilteredEvents(){
 
-let filtered=events
+let filtered = events
 
 if(mapSelect.value)
-filtered=filtered.filter(e=>e.map_id===mapSelect.value)
+filtered = filtered.filter(e=>e.map_id===mapSelect.value)
 
 if(dateSelect.value)
-filtered=filtered.filter(e=>e.date===dateSelect.value)
+filtered = filtered.filter(e=>e.date===dateSelect.value)
 
 if(matchSelect.value)
-filtered=filtered.filter(e=>e.match_id===matchSelect.value)
+filtered = filtered.filter(e=>e.match_id===matchSelect.value)
 
 return filtered
 
@@ -154,18 +176,53 @@ return filtered
 
 function draw(){
 
-ctx.clearRect(0,0,1024,1024)
+ctx.clearRect(0,0,canvas.width,canvas.height)
 
-const filtered=getFilteredEvents()
+let filtered = getFilteredEvents()
 
-filtered.slice(0,6000).forEach(e=>{
+if(currentTime){
+filtered = filtered.filter(e => new Date(e.ts) <= new Date(currentTime))
+}
 
-const [x,y]=worldToMap(e.x,e.z)
+// performance limit
+filtered = filtered.slice(-5000)
+
+// -----------------------------
+// HEATMAP
+// -----------------------------
+
+if(heatmapVisible){
+
+filtered.forEach(p=>{
+
+if(p.x===undefined || p.z===undefined) return
+
+const [x,y] = worldToMap(p.x,p.z)
+
+ctx.fillStyle="rgba(255,0,0,0.03)"
+
+ctx.beginPath()
+ctx.arc(x,y,12,0,Math.PI*2)
+ctx.fill()
+
+})
+
+}
+
+// -----------------------------
+// DRAW EVENTS
+// -----------------------------
+
+filtered.forEach(e=>{
+
+if(e.x===undefined || e.z===undefined) return
+
+const [x,y] = worldToMap(e.x,e.z)
 
 // HUMAN MOVEMENT
 if(e.event==="Position"){
 
-if(Math.random()>0.15)return
+if(Math.random()>0.15) return
 
 ctx.fillStyle="cyan"
 ctx.beginPath()
@@ -177,7 +234,7 @@ ctx.fill()
 // BOT MOVEMENT
 if(e.event==="BotPosition"){
 
-if(Math.random()>0.15)return
+if(Math.random()>0.15) return
 
 ctx.fillStyle="red"
 ctx.beginPath()
@@ -241,10 +298,12 @@ ctx.fillRect(x-2,y-2,4,4)
 }
 
 })
-const slider = document.getElementById("timeSlider")
 
-slider.addEventListener("input", () => {
-    let sliderTimeout
+}
+
+// -----------------------------
+// TIMELINE
+// -----------------------------
 
 slider.addEventListener("input", () => {
 
@@ -256,53 +315,18 @@ const percent = slider.value / 100
 const index = Math.floor(events.length * percent)
 
 currentTime = events[index]?.ts
-draw()
-
-}, 50)
-
-})
-
-const percent = slider.value / 100
-const index = Math.floor(events.length * percent)
-
-currentTime = events[index]?.ts
 
 document.getElementById("timeLabel").textContent =
 currentTime ? new Date(currentTime).toLocaleTimeString() : "Full Match"
 
 draw()
 
-})
-
-// -----------------------------
-// HEATMAP
-// -----------------------------
-
-if(heatmapVisible){
-
-filtered.forEach(p=>{
-
-const [x,y]=worldToMap(p.x,p.z)
-
-ctx.fillStyle="rgba(255,0,0,0.03)"
-
-ctx.beginPath()
-ctx.arc(x,y,12,0,Math.PI*2)
-ctx.fill()
+},50)
 
 })
 
-}
-if(currentTime){
-filtered = filtered.filter(e =>
-new Date(e.ts) <= new Date(currentTime)
-)
-}
-filtered = filtered.slice(-5000)
-}
-
 // -----------------------------
-// MAP SWITCHING
+// MAP SWITCH
 // -----------------------------
 
 mapSelect.addEventListener("change",()=>{
@@ -314,28 +338,24 @@ const maps={
 }
 
 if(maps[mapSelect.value]){
-mapImage.src=maps[mapSelect.value]
+mapImage.src = maps[mapSelect.value]
 }
 
+updateStats()
 draw()
 
 })
 
-// -----------------------------
-// FILTER EVENTS
-// -----------------------------
-
-mapSelect.addEventListener("change",() => { updateStats(); draw(); })
-dateSelect.addEventListener("change",() => { updateStats(); draw(); })
-matchSelect.addEventListener("change",() => { updateStats(); draw(); })
+dateSelect.addEventListener("change",()=>{updateStats();draw()})
+matchSelect.addEventListener("change",()=>{updateStats();draw()})
 
 // -----------------------------
-// HEATMAP BUTTON
+// HEATMAP
 // -----------------------------
 
 heatmapBtn.addEventListener("click",()=>{
 
-heatmapVisible=!heatmapVisible
+heatmapVisible = !heatmapVisible
 
 console.log("Heatmap:",heatmapVisible)
 
